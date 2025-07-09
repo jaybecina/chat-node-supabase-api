@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat API Test Client</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .card {
+        background: #f5f5f5;
+        padding: 20px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .message {
+        margin: 10px 0;
+        padding: 10px;
+        background: white;
+        border-radius: 5px;
+      }
+      .error {
+        color: red;
+      }
+      .success {
+        color: green;
+      }
+      button {
+        margin: 5px;
+        padding: 8px 15px;
+        cursor: pointer;
+      }
+      input,
+      textarea {
+        margin: 5px;
+        padding: 8px;
+        width: 200px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Socket.IO Chat API Test Client</h1>
+
+      <div class="card">
+        <h3>Connection</h3>
+        <input
+          type="text"
+          id="serverUrl"
+          value="http://localhost:3000"
+          placeholder="Server URL"
+        />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <div id="connectionStatus"></div>
+      </div>
+
+      <div class="card">
+        <h3>Authentication</h3>
+        <input type="text" id="authToken" placeholder="Auth Token" />
+        <button onclick="authenticate()">Authenticate</button>
+      </div>
+
+      <div class="card">
+        <h3>Join Conversation</h3>
+        <input type="text" id="conversationId" placeholder="Conversation ID" />
+        <button onclick="joinConversation()">Join</button>
+      </div>
+
+      <div class="card">
+        <h3>Send Message</h3>
+        <input type="text" id="messageConvId" placeholder="Conversation ID" />
+        <textarea id="messageContent" placeholder="Message Content"></textarea>
+        <button onclick="sendMessage()">Send</button>
+      </div>
+
+      <div class="card">
+        <h3>Typing Indicators</h3>
+        <input type="text" id="typingConvId" placeholder="Conversation ID" />
+        <button onclick="startTyping()">Start Typing</button>
+        <button onclick="stopTyping()">Stop Typing</button>
+      </div>
+
+      <div class="card">
+        <h3>Events Log</h3>
+        <div id="events"></div>
+      </div>
+    </div>
+
+    <script>
+      let socket;
+
+      function logEvent(event, data) {
+        const eventsDiv = document.getElementById("events");
+        const eventElement = document.createElement("div");
+        eventElement.className = "message";
+        eventElement.innerHTML = `<strong>${event}:</strong> ${JSON.stringify(data)}`;
+        eventsDiv.prepend(eventElement);
+      }
+
+      function connect() {
+        const serverUrl = document.getElementById("serverUrl").value;
+        socket = io(serverUrl);
+
+        socket.on("connect", () => {
+          document.getElementById("connectionStatus").innerHTML =
+            '<span class="success">Connected</span>';
+          logEvent("connect", "Socket connected");
+        });
+
+        socket.on("disconnect", () => {
+          document.getElementById("connectionStatus").innerHTML =
+            '<span class="error">Disconnected</span>';
+          logEvent("disconnect", "Socket disconnected");
+        });
+
+        socket.on("error", (error) => {
+          logEvent("error", error);
+        });
+
+        socket.on("authenticated", () => {
+          logEvent("authenticated", "Authentication successful");
+        });
+
+        socket.on("joined_conversation", (conversationId) => {
+          logEvent("joined_conversation", { conversationId });
+        });
+
+        socket.on("new_message", (message) => {
+          logEvent("new_message", message);
+        });
+
+        socket.on("user_typing_start", (userId) => {
+          logEvent("user_typing_start", { userId });
+        });
+
+        socket.on("user_typing_stop", (userId) => {
+          logEvent("user_typing_stop", { userId });
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+        }
+      }
+
+      function authenticate() {
+        const token = document.getElementById("authToken").value;
+        socket.emit("authenticate", token);
+        logEvent("authenticate", { token });
+      }
+
+      function joinConversation() {
+        const conversationId = document.getElementById("conversationId").value;
+        socket.emit("join_conversation", conversationId);
+        logEvent("join_conversation", { conversationId });
+      }
+
+      function sendMessage() {
+        const message = {
+          conversation_id: document.getElementById("messageConvId").value,
+          content: document.getElementById("messageContent").value,
+        };
+        socket.emit("send_message", message);
+        logEvent("send_message", message);
+      }
+
+      function startTyping() {
+        const conversationId = document.getElementById("typingConvId").value;
+        socket.emit("typing_start", conversationId);
+        logEvent("typing_start", { conversationId });
+      }
+
+      function stopTyping() {
+        const conversationId = document.getElementById("typingConvId").value;
+        socket.emit("typing_stop", conversationId);
+        logEvent("typing_stop", { conversationId });
+      }
+    </script>
+  </body>
+</html>
