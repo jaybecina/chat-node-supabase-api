@@ -9,7 +9,7 @@ import {
   joinRoom,
   leaveRoom,
   updateRoom,
-} from "../controllers/room";
+} from "../controllers/roomController";
 
 const router = Router();
 

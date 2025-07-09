@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  username  String    @unique
+  avatarUrl String?
+  lastSeen  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  profile              Profile?
+  conversations        ConversationMember[]
+  messages            Message[]
+  createdConversations Conversation[]     @relation("creator")
+
+  @@map("users")
+}
+
+model Profile {
+  userId    String   @id
+  fullName  String?
+  isMentor  Boolean
+  cohortId  String?
+  trackId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohort  Cohort? @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  track   Track?  @relation(fields: [trackId], references: [id], onDelete: SetNull)
+
+  @@map("profiles")
+}
+
+model Message {
+  id             String    @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  readAt         DateTime?
+  attachments    String[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender      User        @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Conversation {
+  id             String    @id @default(uuid())
+  title          String?
+  isGroup        Boolean
+  lastMessageAt  DateTime?
+  creatorId      String
+  type           String    @default("one_to_one")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creator       User                @relation("creator", fields: [creatorId], references: [id])
+  members       ConversationMember[]
+  messages      Message[]
+  unreadCounts  UnreadCount[]
+
+  @@map("conversations")
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  joinedAt       DateTime  @default(now())
+  role           String    @default("member")
+  lastReadAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+
+  @@id([conversationId, userId])
+  @@map("conversation_members")
+}
+
+model Track {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  cohorts     Cohort[]
+  profiles    Profile[]
+
+  @@map("tracks")
+}
+
+model Cohort {
+  id        String    @id @default(uuid())
+  name      String
+  trackId   String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  track    Track     @relation(fields: [trackId], references: [id])
+  profiles Profile[]
+
+  @@map("cohorts")
+}
+
+model UnreadCount {
+  conversationId String
+  userId        String
+  count         Int    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@id([conversationId, userId])
+  @@map("unread_counts")
+}

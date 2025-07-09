@@ -4,8 +4,9 @@ import cors from "cors";
 import helmet from "helmet";
 import { createChatServer } from "./socket/chat";
 import { errorHandler } from "./middleware/error";
-import conversationsRouter from "./routes/conversations";
-import roomsRouter from "./routes/rooms";
+import conversationsRouter from "./routes/conversationsRoute";
+import roomsRouter from "./routes/roomsRoute";
+import authRouter from "./routes/authRoute";
 import { supabase } from "./config/supabase";
 
 // Load environment variables
@@ -42,6 +43,7 @@ app.use(
 app.use(express.json());
 
 // Routes
+app.use("/api/auth", authRouter);
 app.use("/api/conversations", conversationsRouter);
 app.use("/api/rooms", roomsRouter);
 
