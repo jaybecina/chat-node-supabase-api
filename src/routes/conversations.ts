@@ -1,15 +1,23 @@
 import { Router, Response } from "express";
 import { authenticate } from "../middleware/auth";
 import { supabase } from "../config/supabase";
-import { AuthenticatedRequest, createHandler } from "../types/express";
+import {
+  AuthenticatedRequest,
+  AuthenticatedHandler,
+  createHandler,
+} from "../types/express";
 
 const router = Router();
 
 // Get all conversations for the authenticated user
 router.get(
   "/",
-  authenticate as any,
+  authenticate as AuthenticatedHandler,
   createHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     try {
       const { data: conversations, error } = await supabase
         .from("conversations")
@@ -35,8 +43,12 @@ router.get(
 // Create a new one-to-one conversation
 router.post(
   "/direct",
-  authenticate as any,
+  authenticate as AuthenticatedHandler,
   createHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { recipient_id } = req.body;
 
     if (!recipient_id) {
@@ -94,8 +106,12 @@ router.post(
 // Create a new group conversation
 router.post(
   "/group",
-  authenticate as any,
+  authenticate as AuthenticatedHandler,
   createHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { title, member_ids } = req.body;
 
     if (!title || !member_ids || !Array.isArray(member_ids)) {
@@ -124,7 +140,7 @@ router.post(
       const members = [...member_ids, req.user.id].map((userId) => ({
         conversation_id: conversation.id,
         user_id: userId,
-        role: userId === req.user.id ? "admin" : "member",
+        role: userId === req.user?.id ? "admin" : "member",
       }));
 
       await supabase.from("conversation_members").insert(members);
@@ -139,8 +155,12 @@ router.post(
 // Get messages for a conversation
 router.get(
   "/:conversationId/messages",
-  authenticate as any,
+  authenticate as AuthenticatedHandler,
   createHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { conversationId } = req.params;
     const { before } = req.query;
     const limit = 50;
@@ -198,8 +218,12 @@ router.get(
 // Add member to group conversation
 router.post(
   "/:conversationId/members",
-  authenticate as any,
+  authenticate as AuthenticatedHandler,
   createHandler(async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { conversationId } = req.params;
     const { user_id } = req.body;
 

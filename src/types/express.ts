@@ -4,7 +4,7 @@ import { ParamsDictionary } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 
 export interface AuthenticatedRequest extends Request {
-  user: User;
+  user?: User;
 }
 
 export type AuthenticatedHandler = RequestHandler<

@@ -1,12 +1,8 @@
-import { Response, NextFunction } from "express";
+import { RequestHandler } from "express";
 import { supabase } from "../config/supabase";
 import { AuthenticatedRequest } from "../types/express";
 
-export const authenticate = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
+export const authenticate: RequestHandler = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
 
@@ -23,7 +19,7 @@ export const authenticate = async (
       return res.status(401).json({ error: "Invalid token" });
     }
 
-    req.user = user;
+    (req as AuthenticatedRequest).user = user;
     next();
   } catch (error) {
     res.status(401).json({ error: "Authentication failed" });
